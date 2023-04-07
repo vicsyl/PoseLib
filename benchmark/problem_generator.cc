@@ -25,7 +25,7 @@ bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, c
     // Point to point correspondences
     // alpha * p + lambda*x = R*X + t
     for (int i = 0; i < instance.x_point_.size(); ++i) {
-        double err = 1.0 - std::abs(instance.x_point_[i].dot(
+        double err = 1.0 - std::abs(instance.x_point_[i].normalized().dot(
                                (pose.R() * instance.X_point_[i] + pose.t - scale * instance.p_point_[i]).normalized()));
         if (err > tol)
             return false;
@@ -230,6 +230,7 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             Eigen::Vector3d p{0.0, 0.0, 0.0};
             Eigen::Vector3d x{coord_gen(random_engine), coord_gen(random_engine), 1.0};
             x.normalize();
+
             Eigen::Vector3d X;
 
             if (options.generalized_) {
@@ -240,7 +241,14 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
 
             X = instance.pose_gt.R().transpose() * (X - instance.pose_gt.t);
 
-            if (options.unknown_focal_) {
+            if (options.known_depth_) {
+                // unknown_focal_ and known_depth_ not supported both at the same time
+                assert(!options.unknown_focal_);
+                Eigen::Vector3d C = -instance.pose_gt.R().transpose() * instance.pose_gt.t;
+                double target_norm = (C - X).norm();
+                double cur_norm = x.norm();
+                x *= target_norm / cur_norm;
+            } else if (options.unknown_focal_) {
                 x.block<2, 1>(0, 0) *= instance.focal_gt;
                 x.normalize();
             }

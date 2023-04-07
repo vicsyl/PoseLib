@@ -93,6 +93,7 @@ struct ProblemOptions {
     int n_line_point_ = 0;
     int n_line_line_ = 0;
     bool upright_ = false;
+    bool known_depth_ = false;
     bool planar_ = false;
     bool generalized_ = false;
     bool generalized_duplicate_obs_ = false;

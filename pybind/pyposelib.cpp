@@ -130,6 +130,13 @@ std::vector<CameraPose> up2p_wrapper(const std::vector<Eigen::Vector3d> &x, cons
     return output;
 }
 
+std::vector<CameraPose> dp2p_z_wrapper(const LambdaComputation lambda_computation, const std::vector<Eigen::Vector3d> &x,
+                                       const std::vector<Eigen::Vector3d> &X, const bool both_roots=false) {
+    std::vector<CameraPose> output;
+    dp2p_z_hor(lambda_computation, x, X, &output, both_roots);
+    return output;
+}
+
 std::vector<CameraPose> ugp2p_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                                       const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
@@ -260,7 +267,6 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_wrapper(const std::vector
 
     return std::make_pair(pose, output_dict);
 }
-
 
 std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> points2D,
                                                                const std::vector<Eigen::Vector3d> points3D,
@@ -776,6 +782,12 @@ PYBIND11_MODULE(poselib, m) {
     m.def("p1p2ll", &poselib::p1p2ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"));
     m.def("p3ll", &poselib::p3ll_wrapper, py::arg("l"), py::arg("X"), py::arg("V"));
     m.def("up2p", &poselib::up2p_wrapper, py::arg("x"), py::arg("X"));
+    py::enum_<poselib::LambdaComputation>(m, "LambdaComputation")
+        .value("RATIO", poselib::LambdaComputation::RATIO)
+        .value("ONE_FROM_OTHER", poselib::LambdaComputation::ONE_FROM_OTHER)
+        .value("BOTH", poselib::LambdaComputation::BOTH)
+        .export_values();
+    m.def("dp2p_z_hor", &poselib::dp2p_z_wrapper, py::arg("lambda_computation"), py::arg("x"), py::arg("X"), py::arg("both_roots"));
     m.def("ugp2p", &poselib::ugp2p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
     m.def("ugp3ps", &poselib::ugp3ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
     m.def("up1p2pl", &poselib::up1p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"));
