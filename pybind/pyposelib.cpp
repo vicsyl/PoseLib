@@ -268,6 +268,25 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_wrapper(const std::vector
     return std::make_pair(pose, output_dict);
 }
 
+std::pair<CameraPose, py::dict> refine_model_wrapper(const std::vector<Eigen::Vector2d> x,
+                                                             const std::vector<Eigen::Vector3d> X,
+                                                             const CameraPose initialPose,
+                                                             const double loss_scale) {
+
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = loss_scale;
+    bundle_opt.max_iterations = 25;
+
+    CameraPose refinedPose = initialPose;
+    BundleStats stats = bundle_adjust(x, X, &refinedPose, bundle_opt);
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    return std::make_pair(refinedPose, output_dict);
+}
+
+
 std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> points2D,
                                                                const std::vector<Eigen::Vector3d> points3D,
                                                                const CameraPose initial_pose,
@@ -844,6 +863,9 @@ PYBIND11_MODULE(poselib, m) {
     // Stand-alone non-linear refinement
     m.def("refine_absolute_pose", &poselib::refine_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"),
           py::arg("initial_pose"), py::arg("camera_dict"), py::arg("bundle_options") = py::dict(), "Absolute pose non-linear refinement.");
+
+    m.def("refine_model", &poselib::refine_model_wrapper, py::arg("x"), py::arg("X"),
+          py::arg("initial_pose"), py::arg("loss_scale"), "Absolute pose non-linear refinement.");
 
     m.def("refine_absolute_pose_pnpl", &poselib::refine_absolute_pose_pnpl_wrapper, py::arg("points2D"),
           py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"), py::arg("lines3D_2"),
