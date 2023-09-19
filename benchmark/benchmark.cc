@@ -374,7 +374,10 @@ int main() {
     dp2p_opt.n_point_line_ = 0;
     dp2p_opt.upright_ = true;
     dp2p_opt.known_depth_ = true;
-    results.push_back(poselib::benchmark<poselib::SolverDP2P_Z_HOR>(1e6, dp2p_opt, tol));
+    results.push_back(poselib::benchmark<poselib::SolverDP2P_Z_HOR<poselib::LambdaComputation::PRECISE>>(1e6, dp2p_opt, tol));
+    results.push_back(poselib::benchmark<poselib::SolverDP2P_Z_HOR<poselib::LambdaComputation::RATIO>>(1e6, dp2p_opt, tol));
+    results.push_back(poselib::benchmark<poselib::SolverDP2P_Z_HOR<poselib::LambdaComputation::ONE_FROM_OTHER>>(1e6, dp2p_opt, tol));
+    results.push_back(poselib::benchmark<poselib::SolverDP2P_Z_HOR<poselib::LambdaComputation::BOTH>>(1e6, dp2p_opt, tol));
 
     // uGP2P
     poselib::ProblemOptions ugp2p_opt = options;

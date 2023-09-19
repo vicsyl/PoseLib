@@ -122,12 +122,19 @@ struct SolverUP2P {
     static std::string name() { return "up2p"; }
 };
 
-struct SolverDP2P_Z_HOR {
+template<LambdaComputation LC> struct SolverDP2P_Z_HOR {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
-        return dp2p_z_hor(LambdaComputation::RATIO, instance.x_point_, instance.X_point_, solutions);
+        return dp2p_z_hor(LC, instance.x_point_, instance.X_point_, solutions);
     }
     typedef CalibPoseValidator validator;
-    static std::string name() { return "dp2p_z_hor"; }
+    static std::string name() {
+        switch(LC) {
+            case LambdaComputation::PRECISE: return "dp2p_z_hor:PRECISE";
+            case LambdaComputation::RATIO: return "dp2p_z_hor:RATIO";
+            case LambdaComputation::ONE_FROM_OTHER: return "dp2p_z_hor:ONE_FROM_OTHER";
+            case LambdaComputation::BOTH: return "dp2p_z_hor:BOTH";
+        }
+    }
 };
 
 struct SolverUGP2P {

@@ -786,6 +786,7 @@ PYBIND11_MODULE(poselib, m) {
         .value("RATIO", poselib::LambdaComputation::RATIO)
         .value("ONE_FROM_OTHER", poselib::LambdaComputation::ONE_FROM_OTHER)
         .value("BOTH", poselib::LambdaComputation::BOTH)
+        .value("PRECISE", poselib::LambdaComputation::PRECISE)
         .export_values();
     m.def("dp2p_z_hor", &poselib::dp2p_z_wrapper, py::arg("lambda_computation"), py::arg("x"), py::arg("X"), py::arg("both_roots"));
     m.def("ugp2p", &poselib::ugp2p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));

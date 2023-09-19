@@ -38,7 +38,8 @@ namespace poselib {
 enum LambdaComputation {
     RATIO,
     ONE_FROM_OTHER,
-    BOTH
+    BOTH,
+    PRECISE
 };
 
 int dp2p_z_hor(const LambdaComputation lambdaComputation, const std::vector<Eigen::Vector3d> &x,

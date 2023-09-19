@@ -145,7 +145,7 @@ static bool solve_for_second_row(const Eigen::Vector3d &X_d, const Eigen::Vector
 }
 
 
-static int dp2p_z_hor_fixed_lambda(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
+static int dp2p_z_hor_fixed_lambda(Eigen::Vector3d x[2], const std::vector<Eigen::Vector3d> &X,
                                          poselib::CameraPoseVector *output) {
 
     Eigen::Vector3d X_d = X[1] - X[0];
@@ -233,39 +233,45 @@ int poselib::dp2p_z_hor(const LambdaComputation lambdaComputation, const std::ve
                                    const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output, const bool bothRoots) {
 
     double all_solutions = 0;
-    std::vector<Eigen::Vector3d> x_in;
-
     Eigen::Vector3d X_d = X[1] - X[0];
     double X_d_norm = X_d.norm();
-    double x1_norm = x[0].norm();
-    double x2_norm = x[1].norm();
+    Eigen::Vector3d xa[2];
 
-    if (lambdaComputation == LambdaComputation::RATIO || lambdaComputation == LambdaComputation::BOTH) {
-        double delta = X_d_norm / std::sqrt(x[0].squaredNorm() + x[1].squaredNorm() - 2 * x[0].dot(x[1]));
-        x_in.emplace_back(delta * x[0]);
-        x_in.emplace_back(delta * x[1]);
-        all_solutions += dp2p_z_hor_fixed_lambda(x_in, X, output);
-        x_in.clear();
-    }
-    if (lambdaComputation == LambdaComputation::ONE_FROM_OTHER || lambdaComputation == LambdaComputation::BOTH) {
+    if (lambdaComputation == LambdaComputation::PRECISE) {
 
-        double cos_gamma = x[0].transpose() / (x1_norm * x2_norm) * x[1];
+        xa[0] = x[0];
+        xa[1] = x[1];
+        all_solutions += dp2p_z_hor_fixed_lambda(xa, X, output);
 
-        double new_norms[2];
-        int solutions = second_norm(X_d_norm, x1_norm, cos_gamma, x2_norm, bothRoots, new_norms);
-        for (int i = 0; i < solutions; i++) {
-            x_in.emplace_back(x[0]);
-            x_in.emplace_back(new_norms[i] / x2_norm * x[1]);
-            all_solutions += dp2p_z_hor_fixed_lambda(x_in, X, output);
-            x_in.clear();
+    } else {
+
+        if (lambdaComputation == LambdaComputation::RATIO || lambdaComputation == LambdaComputation::BOTH) {
+            double delta = X_d_norm / std::sqrt(x[0].squaredNorm() + x[1].squaredNorm() - 2 * x[0].dot(x[1]));
+            xa[0] = delta * x[0];
+            xa[1] = delta * x[1];
+            all_solutions += dp2p_z_hor_fixed_lambda(xa, X, output);
         }
 
-        solutions = second_norm(X_d_norm, x2_norm, cos_gamma, x1_norm, bothRoots, new_norms);
-        for (int i = 0; i < solutions; i++) {
-            x_in.emplace_back(new_norms[i] / x1_norm * x[0]);
-            x_in.emplace_back(x[1]);
-            all_solutions += dp2p_z_hor_fixed_lambda(x_in, X, output);
-            x_in.clear();
+        if (lambdaComputation == LambdaComputation::ONE_FROM_OTHER || lambdaComputation == LambdaComputation::BOTH) {
+
+            double x1_norm = x[0].norm();
+            double x2_norm = x[1].norm();
+            double cos_gamma = x[0].transpose() / (x1_norm * x2_norm) * x[1];
+
+            double new_norms[2];
+            int solutions = second_norm(X_d_norm, x1_norm, cos_gamma, x2_norm, bothRoots, new_norms);
+            xa[0] = x[0];
+            for (int i = 0; i < solutions; i++) {
+                xa[1] = new_norms[i] / x2_norm * x[1];
+                all_solutions += dp2p_z_hor_fixed_lambda(xa, X, output);
+            }
+
+            solutions = second_norm(X_d_norm, x2_norm, cos_gamma, x1_norm, bothRoots, new_norms);
+            xa[1] = x[1];
+            for (int i = 0; i < solutions; i++) {
+                xa[0] = new_norms[i] / x1_norm * x[0];
+                all_solutions += dp2p_z_hor_fixed_lambda(xa, X, output);
+            }
         }
     }
     return all_solutions;
