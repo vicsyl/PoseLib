@@ -230,7 +230,6 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             Eigen::Vector3d p{0.0, 0.0, 0.0};
             Eigen::Vector3d x{coord_gen(random_engine), coord_gen(random_engine), 1.0};
             x.normalize();
-
             Eigen::Vector3d X;
 
             if (options.generalized_) {
