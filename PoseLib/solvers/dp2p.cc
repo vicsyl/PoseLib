@@ -156,10 +156,13 @@ static int dp2p_z_hor_fixed_lambda(Eigen::Vector3d x[2], const std::vector<Eigen
     double a = 0.0;
     double b = 0.0;
 
-    // X_d(0) * r31 + X_d(2) * r33 = x_d(2)
+    // eq2: X_d(0) * r31 + X_d(2) * r33 = x_d(2)
+    // => r_second = a * r_first + b
+
     bool solve_r31;
     if (X_d(0) != 0.0) {
         // r31 = (x_d(2) - X_d(2) * r33) / X_d(0)
+        // r31 = a * r33 + b
         // solve for r33
         solve_r31 = false;
         a = -X_d(2) / X_d(0);
@@ -171,10 +174,14 @@ static int dp2p_z_hor_fixed_lambda(Eigen::Vector3d x[2], const std::vector<Eigen
         a = -X_d(0) / X_d(2);
         b = x_d(2) / X_d(2);
     }
+
+    // unit: r31^2 + r33^2 = 1
+    // r_first ^ 2 + (a * r_first + b) ^ 2 = 1
+    // (1 + a^2) * r_first^2 + 2 * a * b * r_first + b^2 - 1 = 0
+    // A * r_first^2 + B * r_first + C = 0
     double A = (1 + a * a);
     double B = 2 * a * b;
     double C = b * b - 1.0;
-
     double roots[2];
     const int sols = solve_quadratic_real_wrapper(A, B, C, roots);
 
