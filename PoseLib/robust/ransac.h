@@ -115,4 +115,10 @@ RansacStats ransac_1D_radial_pnp(const std::vector<Point2D> &x, const std::vecto
                                  const AbsolutePoseOptions &opt, CameraPose *best_model,
                                  std::vector<char> *best_inliers);
 
+// Absolute pose estimation with the 1D radial setup estimating focal and one radial parameter.
+// Returns SIMPLE_DIVISION camera with principal point (0,0).
+RansacStats ransac_1D_radial_pnpfr(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                                   const AbsolutePoseOptions &opt, Image *best_model,
+                                   std::vector<char> *best_inliers);
+
 } // namespace poselib

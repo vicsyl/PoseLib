@@ -2,6 +2,7 @@
 #include "../../pybind11_extension.h"
 
 #include <PoseLib/poselib.h>
+#include <PoseLib/robust.h>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
@@ -310,6 +311,34 @@ std::pair<CameraPose, py::dict> estimate_1D_radial_absolute_pose_wrapper(
     return std::make_pair(pose, output_dict);
 }
 
+std::tuple<CameraPose, double, double, py::dict> estimate_1D_radial_focal_absolute_pose_wrapper(
+    const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
+    const py::dict &opt_dict, const std::optional<CameraPose> &initial_pose) {
+
+    AbsolutePoseOptions opt;
+    update_absolute_pose_options(opt_dict, opt);
+
+    Image image;
+    image.camera.model_id = CameraModelId::SIMPLE_DIVISION;
+    image.camera.width = 0;
+    image.camera.height = 0;
+    image.camera.params = {1.0, 0.0, 0.0, 0.0};
+    if (initial_pose.has_value()) {
+        image.pose = initial_pose.value();
+        opt.ransac.score_initial_model = true;
+    }
+    std::vector<char> inlier_mask;
+
+    py::gil_scoped_release release;
+    RansacStats stats = estimate_1D_radial_focal_absolute_pose(points2D, points3D, opt, &image, &inlier_mask);
+    py::gil_scoped_acquire acquire;
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    output_dict["inliers"] = convert_inlier_vector(inlier_mask);
+    return std::make_tuple(image.pose, image.camera.focal(), image.camera.params[3], output_dict);
+}
+
 } // namespace
 
 void register_absolute_pose(py::module &m) {
@@ -371,6 +400,10 @@ void register_absolute_pose(py::module &m) {
           py::arg("points3D"), py::arg("opt") = py::dict(),
           py::arg("initial_pose") = py::none(),
           "Absolute pose estimation for the 1D radial camera model with non-linear refinement.");
+    m.def("estimate_1D_radial_focal_absolute_pose", &estimate_1D_radial_focal_absolute_pose_wrapper,
+          py::arg("points2D"), py::arg("points3D"), py::arg("opt") = py::dict(),
+          py::arg("initial_pose") = py::none(),
+          "Absolute pose estimation for centered points with unknown focal and one radial parameter.");
 
     // Stand-alone non-linear refinement
     m.def("refine_absolute_pose",

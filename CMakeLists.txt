@@ -33,6 +33,7 @@ endif()
 target_compile_features(${build_target} PUBLIC cxx_std_17)
 endfunction()
 
+set(Eigen3_DIR "/home/vavravac/dev/PoseLib/eigen-3.4.0/build")
 # Eigen
 find_package(Eigen3 REQUIRED)
 

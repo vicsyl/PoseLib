@@ -1,3 +1,9 @@
+# custom
+.idea
+eigen-3.4.0
+**/._*
+cmake-build-debug
+
 # Compiled Object files
 *.slo
 *.lo

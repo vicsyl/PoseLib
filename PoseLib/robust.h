@@ -177,6 +177,13 @@ RansacStats estimate_1D_radial_absolute_pose(const std::vector<Point2D> &points2
                                              const AbsolutePoseOptions &opt, CameraPose *pose,
                                              std::vector<char> *inliers);
 
+// Estimates absolute pose in the centered 1D radial setup and also recovers focal and one radial parameter.
+// Returns a SIMPLE_DIVISION camera with principal point/distortion center fixed to (0,0).
+RansacStats estimate_1D_radial_focal_absolute_pose(const std::vector<Point2D> &points2D,
+                                                   const std::vector<Point3D> &points3D,
+                                                   const AbsolutePoseOptions &opt, Image *image,
+                                                   std::vector<char> *inliers);
+
 } // namespace poselib
 
 #endif

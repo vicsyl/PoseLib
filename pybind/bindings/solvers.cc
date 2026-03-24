@@ -2,6 +2,7 @@
 #include "../pybind11_extension.h"
 
 #include <PoseLib/poselib.h>
+#include <PoseLib/solvers/p5pf_radial.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -59,6 +60,15 @@ p4pf_wrapper(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vec
     std::vector<double> output_focal;
     p4pf(x, X, &output, &output_focal, filter_solutions);
     return std::make_pair(output, output_focal);
+}
+
+std::tuple<std::vector<CameraPose>, std::vector<double>, std::vector<double>>
+p5pf_radial_wrapper(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X) {
+    std::vector<CameraPose> output;
+    std::vector<double> output_focal;
+    std::vector<double> output_dist;
+    p5pf_radial(x, X, &output, &output_focal, &output_dist);
+    return std::make_tuple(output, output_focal, output_dist);
 }
 
 std::vector<CameraPose> p2p2pl_wrapper(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
@@ -311,6 +321,8 @@ void register_solvers(py::module &m) {
     m.def("gp4ps_camposeco", &gp4ps_camposeco_wrapper, py::arg("p"), py::arg("x"), py::arg("X"),
           py::call_guard<py::gil_scoped_release>());
     m.def("p4pf", &p4pf_wrapper, py::arg("x"), py::arg("X"), py::arg("filter_solutions"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p5pf_radial", &p5pf_radial_wrapper, py::arg("x"), py::arg("X"),
           py::call_guard<py::gil_scoped_release>());
     m.def("p2p2pl", &p2p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"),
           py::call_guard<py::gil_scoped_release>());

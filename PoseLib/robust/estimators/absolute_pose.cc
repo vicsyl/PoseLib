@@ -39,6 +39,7 @@
 #include "PoseLib/solvers/p4pf.h"
 #include "PoseLib/solvers/p5lp_radial.h"
 #include "PoseLib/solvers/p5pf.h"
+#include "PoseLib/solvers/p5pf_radial.h"
 #include "PoseLib/solvers/p5pfr.h"
 
 namespace poselib {
@@ -374,6 +375,64 @@ void Radial1DAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     // TODO: experiment with good thresholds for copy vs iterating full point set
     Camera camera(Radial1DCameraModel::model_id, {0.0, 0.0});
     bundle_adjust_1D_radial(x, X, pose, camera, bundle_opt);
+}
+
+void Radial1DFocalDistAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        xs[k] = x[sample[k]];
+        Xs[k] = X[sample[k]];
+    }
+
+    std::vector<CameraPose> poses;
+    std::vector<double> focals;
+    std::vector<double> dist;
+    p5pf_radial(xs, Xs, &poses, &focals, &dist);
+
+    models->clear();
+    for (size_t i = 0; i < poses.size(); ++i) {
+        if (focals[i] < 0) {
+            continue;
+        }
+
+        Camera camera;
+        camera.model_id = CameraModelId::SIMPLE_DIVISION;
+        camera.width = 0;
+        camera.height = 0;
+        camera.params = {focals[i], 0.0, 0.0, dist[i]};
+
+        Image image(poses[i], camera);
+        if (filter_minimal_sample) {
+            size_t inlier_count = 0;
+            compute_msac_score(image, xs, Xs, opt.max_error * opt.max_error, &inlier_count);
+            if (inlier_count < 4) {
+                continue;
+            }
+        }
+        models->emplace_back(image);
+    }
+}
+
+double Radial1DFocalDistAbsolutePoseEstimator::score_model(const Image &image, size_t *inlier_count) const {
+    if (image.camera.focal() < 0) {
+        return std::numeric_limits<double>::max();
+    }
+    double score = compute_msac_score(image, x, X, opt.max_error * opt.max_error, inlier_count);
+    if (inlier_scoring) {
+        score += static_cast<double>(x.size() - *inlier_count) * opt.max_error * opt.max_error;
+    }
+    return score;
+}
+
+void Radial1DFocalDistAbsolutePoseEstimator::refine_model(Image *image) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_error;
+    bundle_opt.max_iterations = 25;
+    bundle_opt.refine_focal_length = true;
+    bundle_opt.refine_principal_point = false;
+    bundle_opt.refine_extra_params = true;
+    bundle_adjust(x, X, image, bundle_opt);
 }
 
 } // namespace poselib

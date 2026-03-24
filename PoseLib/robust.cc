@@ -933,4 +933,59 @@ RansacStats estimate_1D_radial_absolute_pose(const std::vector<Point2D> &points2
     return stats;
 }
 
+RansacStats estimate_1D_radial_focal_absolute_pose(const std::vector<Point2D> &points2D,
+                                                   const std::vector<Point3D> &points3D,
+                                                   const AbsolutePoseOptions &opt, Image *image,
+                                                   std::vector<char> *inliers) {
+    if (points2D.size() < 5) {
+        return RansacStats();
+    }
+
+    // Scale by the average norm to improve numerics in RANSAC/BA.
+    double scale = 0.0;
+    for (size_t k = 0; k < points2D.size(); ++k) {
+        scale += points2D[k].norm();
+    }
+    scale = points2D.size() / scale;
+
+    std::vector<Point2D> points2D_scaled = points2D;
+    for (size_t k = 0; k < points2D_scaled.size(); ++k) {
+        points2D_scaled[k] *= scale;
+    }
+
+    AbsolutePoseOptions opt_scaled = opt;
+    opt_scaled.max_error *= scale;
+    opt_scaled.bundle.loss_scale *= scale;
+    opt_scaled.bundle.refine_focal_length = true;
+    opt_scaled.bundle.refine_principal_point = false;
+    opt_scaled.bundle.refine_extra_params = true;
+
+    Image estimated;
+    RansacStats stats = ransac_1D_radial_pnpfr(points2D_scaled, points3D, opt_scaled, &estimated, inliers);
+
+    if (stats.num_inliers > 5) {
+        std::vector<Point2D> points2D_inliers;
+        std::vector<Point3D> points3D_inliers;
+        points2D_inliers.reserve(points2D.size());
+        points3D_inliers.reserve(points3D.size());
+
+        for (size_t k = 0; k < points2D.size(); ++k) {
+            if (!(*inliers)[k]) {
+                continue;
+            }
+            points2D_inliers.push_back(points2D_scaled[k]);
+            points3D_inliers.push_back(points3D[k]);
+        }
+
+        bundle_adjust(points2D_inliers, points3D_inliers, &estimated, opt_scaled.bundle);
+    }
+
+    // Undo coordinate scaling.
+    estimated.camera.params[0] /= scale;
+    image->pose = estimated.pose;
+    image->camera = estimated.camera;
+
+    return stats;
+}
+
 } // namespace poselib

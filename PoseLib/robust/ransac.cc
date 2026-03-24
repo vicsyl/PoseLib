@@ -401,4 +401,20 @@ RansacStats ransac_1D_radial_pnp(const std::vector<Point2D> &x, const std::vecto
     return stats;
 }
 
+RansacStats ransac_1D_radial_pnpfr(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                                   const AbsolutePoseOptions &opt, Image *best_model, std::vector<char> *best_inliers) {
+    best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+    best_model->pose.t.setZero();
+    best_model->camera.model_id = CameraModelId::SIMPLE_DIVISION;
+    best_model->camera.width = 0;
+    best_model->camera.height = 0;
+    best_model->camera.params = {1.0, 0.0, 0.0, 0.0};
+
+    Radial1DFocalDistAbsolutePoseEstimator estimator(opt, x, X);
+    RansacStats stats = ransac<Radial1DFocalDistAbsolutePoseEstimator>(estimator, opt.ransac, best_model);
+
+    get_inliers(*best_model, x, X, opt.max_error * opt.max_error, best_inliers);
+    return stats;
+}
+
 } // namespace poselib

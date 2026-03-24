@@ -11,6 +11,7 @@ set(SOURCES
     solvers/p4pf.cc
     solvers/p35pf.cc
     solvers/p5pf.cc
+    solvers/p5pf_radial.cc
     solvers/p5pfr.cc
     solvers/p3p1llf.cc
     solvers/p2p2llf.cc
@@ -77,6 +78,7 @@ set(HEADERS_PUBLIC
     solvers/p4pf.h
     solvers/p35pf.h
     solvers/p5pf.h
+    solvers/p5pf_radial.h
     solvers/p5pfr.h
     solvers/pnplf_impl.h
     solvers/p3p1llf.h
